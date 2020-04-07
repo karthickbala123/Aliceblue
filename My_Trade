@@ -1,0 +1,95 @@
+import logging
+import datetime
+import statistics
+from time import sleep
+from alice_blue import *
+import pandas as pd
+
+username = 'username'
+password = 'password'
+api_secret = 'api_secret'
+twoFA = 'a'
+logging.basicConfig(level=logging.DEBUG)        #
+stock_name=''
+ltp = 0
+time_stamp=None
+socket_opened = False
+alice = None
+def event_handler_quote_update(message):
+    global ltp
+    global stock_name
+    global time_stamp
+    ltp = message['ltp']
+    stock_name=message['instrument']
+    stock_name=stock_name[2]
+    time_stamp=pd.to_datetime(message['exchange_time_stamp'],unit='s')
+    
+
+def open_callback():
+    global socket_opened
+    socket_opened = True
+
+def buy_signal(ins_scrip):
+    global alice
+    alice.place_order(transaction_type = TransactionType.Buy,
+                         instrument = ins_scrip,
+                         quantity = 1,
+                         order_type = OrderType.Market,
+                         product_type = ProductType.Intraday,
+                         price = 0.0,
+                         trigger_price = None,
+                         stop_loss = None,
+                         square_off = None,
+                         trailing_sl = None,
+                         is_amo = False)
+
+def sell_signal(ins_scrip):
+    global alice
+    alice.place_order(transaction_type = TransactionType.Sell,
+                         instrument = ins_scrip,
+                         quantity = 1,
+                         order_type = OrderType.Market,
+                         product_type = ProductType.Intraday,
+                         price = 0.0,
+                         trigger_price = None,
+                         stop_loss = None,
+                         square_off = None,
+                         trailing_sl = None,
+                         is_amo = False)
+    
+def main():
+    global socket_opened
+    global alice
+    global username
+    global password
+    global twoFA
+    global api_secret
+
+
+    alice_username=''
+    alice_password=''
+
+    access_token=''
+    
+
+    
+    alice = AliceBlue(username=username, password=password, access_token=access_token, master_contracts_to_download=['NSE'])
+    
+    
+    socket_opened = False
+    alice.start_websocket(subscribe_callback=event_handler_quote_update,
+                          socket_open_callback=open_callback,
+                          run_in_background=True)
+    while(socket_opened==False):  
+        pass
+            
+    alice.subscribe([alice.get_instrument_by_symbol('NSE', 'RELIANCE'), alice.get_instrument_by_symbol('NSE', 'ACC'),alice.get_instrument_by_symbol('NSE', 'IBULHSGFIN'),alice.get_instrument_by_symbol('NSE', 'HDFCBANK'),alice.get_instrument_by_symbol('NSE', 'ICICIBANK'),alice.get_instrument_by_symbol('NSE', 'TATASTEEL'),alice.get_instrument_by_symbol('NSE', 'TCS'),alice.get_instrument_by_symbol('NSE', 'AXISBANK'),alice.get_instrument_by_symbol('NSE', 'BAJFINANCE'),alice.get_instrument_by_symbol('NSE','INFY' ),alice.get_instrument_by_symbol('NSE', 'POWERGRID'),alice.get_instrument_by_symbol('NSE', 'ASIANPAINT'),alice.get_instrument_by_symbol('NSE', 'ITC'),alice.get_instrument_by_symbol('NSE', 'KOTAKBANK' ),alice.get_instrument_by_symbol('NSE', 'HINDUNILVR'),alice.get_instrument_by_symbol('NSE', 'MARUTI'),alice.get_instrument_by_symbol('NSE', 'BHARTIARTL'),alice.get_instrument_by_symbol('NSE', 'LT'),alice.get_instrument_by_symbol('NSE', 'HCLTECH' ),alice.get_instrument_by_symbol('NSE','TITAN')], LiveFeedType.COMPACT)
+                                                                                                                                                                                                                                                                                                                                                                                                                                            
+    while True:
+        if stock_name=='RELIANCE':
+            print(time_stamp,ltp)
+        
+        sleep(0.1)  
+    
+if(__name__ == '__main__'):
+    main()
